@@ -20,7 +20,7 @@ end
 
 to go
   ;; ask the turtles to adopt or not adopt randomly
-  ask turtles [
+  ask turtles with [ not adopted? ] [;; here, we are saying that make this once time
     adopt
   ]
   tick
@@ -29,12 +29,17 @@ end
 ;; this procedure will determine whether or not to adopt
 ;; in this version, i did a modification with the else and color. original does not contain else
 to adopt
-  ifelse random 10 = 4[
+
+  ;; adopt based on a broadcast influence
+  if random-float 1.0 < broadcast-influence[
+    set adopted? true
+    set color red
+  ]
+
+  ;; adopt based on social influence
+  if random-float 1.0 < ( social-influence * ( count turtles with [adopted?] / count turtles ) ) [
     set adopted? true
     set color green
-  ] [
-    set adopted? false
-    set color red
   ]
 end
 @#$#@#$#@
@@ -81,10 +86,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-14
-98
-77
-131
+18
+221
+81
+254
 NIL
 setup
 NIL
@@ -98,10 +103,10 @@ NIL
 1
 
 BUTTON
-121
-100
-184
-133
+125
+223
+188
+256
 NIL
 go
 T
@@ -113,6 +118,36 @@ NIL
 NIL
 NIL
 1
+
+SLIDER
+14
+92
+186
+125
+broadcast-influence
+broadcast-influence
+0
+1
+0.05
+0.05
+1
+NIL
+HORIZONTAL
+
+SLIDER
+13
+153
+185
+186
+social-influence
+social-influence
+0
+1
+0.5
+0.05
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
