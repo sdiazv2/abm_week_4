@@ -1,57 +1,142 @@
-turtles-own [ adopted? ];;add a property related to adoption
+extensions [ nw ]
+
+turtles-own [ adopted? ] ;; property related to adoption
+
+breed [ influentials influential ]
+breed [ regulars regular ]
 
 to setup
   ca
 
-  ;; creation of agents routine dependent of the slider
-  crt num-agents [
-    ;; adoption property needs to be initialized in the setup
-    set adopted? false
-    ;; separate the turtles spatially
-    setxy random-xcor random-ycor
+  set-default-shape regulars "person"
+  set-default-shape influentials "star"
+;; nw:generate-random turtles links 100 0.5 [ set color red ]
 
-    ;; consistent appearance
-    set color white
-    set shape "person"
+  ;; create the agents based on the slider in a random network
+  if network = "random" [
+    nw:generate-random turtles links num-agents density [
+      ;; adoption property is initialized
+      set adopted? false
+
+      ;; separate the turtles spatially
+      setxy random-xcor random-ycor
+
+      ;; consistent appearance
+      set color white
+      set shape "person"
+
+    ]
+  ]
+
+  ;; create the network of agents via a preferential attachment network
+  ;;   ignores the density slider
+  if network = "preferential-attachment" [
+;;    nw:generate-preferential-attachment turtles links 100 [ set color red ]
+    nw:generate-preferential-attachment turtles links num-agents 1 [
+      ;; adoption property is initialized
+      set adopted? false
+
+      ;; separate the turtles spatially
+      setxy random-xcor random-ycor
+
+      ;; consistent appearance
+      set color white
+      set shape "person"
+
+    ]
+  ]
+
+  repeat 30 [ layout-spring turtles links 0.2 5 1 ]
+
+  ask n-of (frac-influential * num-agents) turtles [
+    set breed influentials
+  ]
+  ask turtles with [ breed != influentials ] [
+    set breed regulars
   ]
 
   reset-ticks
 end
 
 to go
+
   ;; stop the model if no one is left to adopt
   if ( not any? turtles with [ not adopted? ] ) [
     stop
   ]
+
   ;; ask the turtles to adopt or not adopt randomly
-  ask turtles with [ not adopted? ] [;; here, we are saying that make this once time
+  ask turtles with [ not adopted? ] [
     adopt
   ]
+
   tick
 end
 
+;; this procedure resets the diffusion of the information
+to reset-diffusion
+  ask turtles [
+    set adopted? false
+    set color white
+  ]
+  clear-all-plots
+end
+
 ;; this procedure will determine whether or not to adopt
-;; in this version, i did a modification with the else and color. original does not contain else
 to adopt
 
-  ;; adopt based on a broadcast influence
-  if random-float 1.0 < broadcast-influence[
+  ;; adopt based on broadcast influence
+  if random-float 1.0 < broadcast-influence [
     set adopted? true
     set color red
   ]
 
-  ;; adopt based on social influence
-  if not adopted? and random-float 1.0 < ( social-influence * ( count turtles with [adopted?] / count turtles ) ) [
-    set adopted? true
-    set color green
+  ;; adopt based on social influence based on network
+  if ( breed = influentials ) [
+
+    let neighbors-adopted link-neighbors with [ adopted? and breed = influentials ]
+    let total-neighbors link-neighbors with [ breed = influentials ]
+    if count total-neighbors > 0 [
+      if not adopted? and random-float 1.0 <
+      ( social-influence * ( count neighbors-adopted / count total-neighbors ) ) [
+        set adopted? true
+        set color green
+      ]
+    ]
   ]
+
+  ;; adopt based on social influence based on influentials if we are regular
+  if ( breed = regulars ) [
+
+    let inf-neighbors-adopted link-neighbors with [ adopted? and breed = influentials ]
+    let inf-total-neighbors link-neighbors with [ breed = influentials ]
+    let reg-neighbors-adopted link-neighbors with [ adopted? and breed = regulars ]
+    let reg-total-neighbors link-neighbors with [ breed = regulars ]
+    let influential-influence 0
+    if count inf-total-neighbors > 0 [
+      set influential-influence count inf-neighbors-adopted / count inf-total-neighbors
+    ]
+    let regular-influence 0
+    if count reg-total-neighbors > 0 [
+      set regular-influence count reg-neighbors-adopted / count reg-total-neighbors
+    ]
+    let regular-weight 1 - influential-weight
+    let neighbor-influence influential-influence * influential-weight +
+      (regular-influence * regular-weight)
+    if not adopted? and random-float 1.0 <
+      ( social-influence * neighbor-influence ) [
+        set adopted? true
+        set color green
+      ]
+  ]
+
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-504
-67
-941
-505
+364
+10
+801
+448
 -1
 -1
 13.0
@@ -75,13 +160,13 @@ ticks
 30.0
 
 SLIDER
-13
-38
-185
-71
+16
+23
+184
+56
 num-agents
 num-agents
-0
+2
 100
 50.0
 1
@@ -90,10 +175,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-18
-221
-81
-254
+16
+237
+82
+271
 NIL
 setup
 NIL
@@ -107,10 +192,10 @@ NIL
 1
 
 BUTTON
-125
-223
+124
+237
 188
-256
+271
 NIL
 go
 T
@@ -124,14 +209,14 @@ NIL
 1
 
 SLIDER
-14
-92
-186
-125
+8
+61
+188
+94
 broadcast-influence
 broadcast-influence
 0
-1
+1.0
 0.05
 0.05
 1
@@ -139,14 +224,14 @@ NIL
 HORIZONTAL
 
 SLIDER
-13
-153
-185
+15
+98
 186
+131
 social-influence
 social-influence
 0
-1
+1.0
 0.5
 0.05
 1
@@ -154,10 +239,10 @@ NIL
 HORIZONTAL
 
 PLOT
-12
-283
-325
-567
+7
+327
+207
+477
 Adoptions over Time
 Time
 Adoptions
@@ -169,7 +254,81 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot count turtles with [ adopted? ]"
+"total" 1.0 0 -16777216 true "" "plot count turtles with [ adopted? ]"
+"regulars" 1.0 0 -7500403 true "" "plot count regulars with [ adopted? ]"
+"influentials" 1.0 0 -2674135 true "" "plot count influentials with [ adopted? ]"
+
+BUTTON
+40
+277
+165
+311
+NIL
+reset-diffusion
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SLIDER
+16
+141
+189
+174
+density
+density
+0
+1.0
+0.25
+0.05
+1
+NIL
+HORIZONTAL
+
+CHOOSER
+16
+182
+189
+227
+network
+network
+"random" "preferential-attachment"
+1
+
+SLIDER
+187
+23
+360
+56
+frac-influential
+frac-influential
+0
+1.0
+0.05
+0.05
+1
+NIL
+HORIZONTAL
+
+SLIDER
+188
+58
+361
+91
+influential-weight
+influential-weight
+0
+1.0
+0.5
+0.05
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -530,5 +689,5 @@ true
 Line -7500403 true 150 150 90 180
 Line -7500403 true 150 150 210 180
 @#$#@#$#@
-0
+1
 @#$#@#$#@
