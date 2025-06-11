@@ -19,6 +19,10 @@ to setup
 end
 
 to go
+  ;; stop the model if no one is left to adopt
+  if ( not any? turtles with [ not adopted? ] ) [
+    stop
+  ]
   ;; ask the turtles to adopt or not adopt randomly
   ask turtles with [ not adopted? ] [;; here, we are saying that make this once time
     adopt
@@ -37,7 +41,7 @@ to adopt
   ]
 
   ;; adopt based on social influence
-  if random-float 1.0 < ( social-influence * ( count turtles with [adopted?] / count turtles ) ) [
+  if not adopted? and random-float 1.0 < ( social-influence * ( count turtles with [adopted?] / count turtles ) ) [
     set adopted? true
     set color green
   ]
@@ -148,6 +152,24 @@ social-influence
 1
 NIL
 HORIZONTAL
+
+PLOT
+12
+283
+325
+567
+Adoptions over Time
+Time
+Adoptions
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot count turtles with [ adopted? ]"
 
 @#$#@#$#@
 ## WHAT IS IT?
