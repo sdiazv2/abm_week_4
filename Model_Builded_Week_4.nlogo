@@ -1,17 +1,41 @@
-turtles-own [];;add a property related to adoption
+turtles-own [ adopted? ];;add a property related to adoption
 
 to setup
   ca
 
   ;; creation of agents routine dependent of the slider
-  ;; adoption property needs to be initialized in the setup
-  ;; separate the turtles spatially
+  crt num-agents [
+    ;; adoption property needs to be initialized in the setup
+    set adopted? false
+    ;; separate the turtles spatially
+    setxy random-xcor random-ycor
+
+    ;; consistent appearance
+    set color white
+    set shape "person"
+  ]
 
   reset-ticks
 end
 
 to go
   ;; ask the turtles to adopt or not adopt randomly
+  ask turtles [
+    adopt
+  ]
+  tick
+end
+
+;; this procedure will determine whether or not to adopt
+;; in this version, i did a modification with the else and color. original does not contain else
+to adopt
+  ifelse random 10 = 4[
+    set adopted? true
+    set color green
+  ] [
+    set adopted? false
+    set color red
+  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -55,6 +79,40 @@ num-agents
 1
 NIL
 HORIZONTAL
+
+BUTTON
+14
+98
+77
+131
+NIL
+setup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+121
+100
+184
+133
+NIL
+go
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
